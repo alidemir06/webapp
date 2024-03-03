@@ -31,7 +31,7 @@ def send_email(conn, username, key):
         # Email configuration
         sender_email = 'alidmr1294@gmail.com'
         receiver_email = get_user_email(conn, username)
-        password = 'dylh ncax wsnf lvqt'
+        password = '*************'
 
         # Create a multipart message and set headers
         message = MIMEMultipart()
