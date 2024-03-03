@@ -8,6 +8,49 @@ import string
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from github import Github
+
+def get_github_project_links(username, token=None):
+    if token:
+        g = Github(token)
+    else:
+        g = Github()  # If you're using this script for personal use, you might not need a token
+
+    user = g.get_user(username)
+    repos = user.get_repos()
+
+    project_links = [repo.html_url for repo in repos]
+
+    return project_links
+
+def show_github_projects(links):
+    for link in links:
+        label = link.split("/")[-1]
+        st.link_button(label=label, url=link)
+
+def delete_user(conn, username):
+    """
+    Delete the user's account from the database based on their username.
+    
+    Parameters:
+        conn (sqlite3.Connection): SQLite database connection.
+        username (str): Username of the user whose account is to be deleted.
+    
+    Returns:
+        bool: True if the account is deleted successfully, False otherwise.
+    """
+    sql_delete_user = """
+        DELETE FROM userstable
+        WHERE username = ?
+    """
+    try:
+        c = conn.cursor()
+        c.execute(sql_delete_user, (username,))
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        print(e)
+        return False
 
 def get_user_email(conn, username):
     sql_select_email = """
@@ -31,7 +74,7 @@ def send_email(conn, username, key):
         # Email configuration
         sender_email = 'alidmr1294@gmail.com'
         receiver_email = get_user_email(conn, username)
-        password = '*************'
+        password = 'dylh ncax wsnf lvqt'
 
         # Create a multipart message and set headers
         message = MIMEMultipart()
@@ -185,9 +228,44 @@ def main():
                 user_id = login_user(conn, username, password)
                 if user_id:
                     st.sidebar.success("Logged in as {}".format(username))
-                    task = st.selectbox("Task", ["Add Post", "Analytics", "Profiles"])
+                    task = st.selectbox("Task", ["Add Post", "Analytics", "Profiles", "Delete Account", "Change Password", "Github"])
                     if task == "Add Post":
                         st.subheader("Add your post")
+                    
+                    elif task == "Delete Account":
+                        if st.button("Delete Account"):
+                             delete_user(conn, username)
+                             st.success("Your account has been successfully deleted.")
+                    elif task == "Change Password":
+                        st.subheader("Change Password")
+                        current_password = st.text_input("Current Password", type="password")
+                        new_password = st.text_input("New Password", type="password")
+                        confirm_new_password = st.text_input("Confirm New Password", type="password")
+                        
+                        if st.button("Change Password"):
+                            if not current_password or not new_password or not confirm_new_password:
+                                st.warning("Please fill in all fields.")
+                            elif new_password != confirm_new_password:
+                                st.warning("New passwords do not match.")
+                            elif not is_valid_password(new_password):
+                                st.warning("New password does not meet requirements.")
+                                st.info("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")  
+                            else:
+                                # Check if the current password is correct
+                                user_id = login_user(conn, username, current_password)
+                                if user_id:
+                                    # Update the password in the database
+                                    update_password(conn, username, new_password)
+                                    st.success("Password changed successfully.")
+                                else:
+                                    st.warning("Incorrect password. Please try again.")
+
+                    elif task == "Github":
+                        github_username = st.text_input("Enter your Github username")
+                        if st.button("Fetch GitHub Repositories"):
+                            links = get_github_project_links(github_username)
+                            show_github_projects(links)
+
                     elif task == "Analytics":
                         st.subheader("Analytics")
                     elif task == "Profiles":
