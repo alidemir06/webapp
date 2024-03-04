@@ -26,7 +26,7 @@ def get_github_project_links(username, token=None):
 def show_github_projects(links):
     for link in links:
         label = link.split("/")[-1]
-        st.link_button(label=label, url=link)
+        st.link_button(label=label, url=link, type="primary")
 
 def delete_user(conn, username):
     """
@@ -331,7 +331,6 @@ def main():
                         add_userdata(conn, username=new_user, password=new_password, email=new_email)
                         st.success("You have created a valid account...")
                         st.info("Go to the login menu to login")
-
 
     conn.close()
 
